@@ -131,16 +131,17 @@ int main(int argc, char **argv) {
       const uvc_format_desc_t *format_desc = uvc_get_format_descs(devh);
       const uvc_frame_desc_t *frame_desc = format_desc->frame_descs;
       enum uvc_frame_format frame_format;
-      int width = 640;
-      int height = 480;
+      int width = 424;
+      int height = 240;
       int fps = 30;
 
+      printf("Descriptor Subtype: %02x\n", format_desc->bDescriptorSubtype);
       switch (format_desc->bDescriptorSubtype) {
       case UVC_VS_FORMAT_MJPEG:
         frame_format = UVC_COLOR_FORMAT_MJPEG;
         break;
       case UVC_VS_FORMAT_FRAME_BASED:
-        frame_format = UVC_FRAME_FORMAT_H264;
+        frame_format = UVC_FRAME_FORMAT_Z16;
         break;
       default:
         frame_format = UVC_FRAME_FORMAT_YUYV;
@@ -162,12 +163,11 @@ int main(int argc, char **argv) {
           width, height, fps /* width, height, fps */
       );
 
-      /* Print out the result */
-      uvc_print_stream_ctrl(&ctrl, stderr);
-
       if (res < 0) {
         uvc_perror(res, "get_mode"); /* device doesn't provide a matching stream */
       } else {
+        /* Print out the result */
+        uvc_print_stream_ctrl(&ctrl, stderr);
         /* Start the video stream. The library will call user function cb:
          *   cb(frame, (void *) 12345)
          */

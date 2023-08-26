@@ -118,6 +118,23 @@ void uvc_print_stream_ctrl(uvc_stream_ctrl_t *ctrl, FILE *stream) {
   fprintf(stream, "wDelay: %d\n", ctrl->wDelay);
   fprintf(stream, "dwMaxVideoFrameSize: %u\n", ctrl->dwMaxVideoFrameSize);
   fprintf(stream, "dwMaxPayloadTransferSize: %u\n", ctrl->dwMaxPayloadTransferSize);
+
+  fprintf(stream, "dwClockFrequency: %u\n", ctrl->dwClockFrequency);
+  fprintf(stream, "bmFramingInfo: %02x\n", ctrl->bmFramingInfo);
+  fprintf(stream, "bPreferredVersion: %u\n", ctrl->bPreferredVersion);
+  fprintf(stream, "bMinVersion: %u\n", ctrl->bMinVersion);
+  fprintf(stream, "bMaxVersion: %u\n", ctrl->bMaxVersion);
+
+  fprintf(stream, "bUsage: %02x\n", ctrl->bUsage);
+  fprintf(stream, "bBitDepthLuma: %02x\n", ctrl->bBitDepthLuma);
+  fprintf(stream, "bmSettings: %02x\n", ctrl->bmSettings);
+  fprintf(stream, "bMaxNumberOfRefFramesPlus1: %u\n", ctrl->bMaxNumberOfRefFramesPlus1);
+  fprintf(stream, "bmRateControlModes: %04x\n", ctrl->bmRateControlModes);
+  fprintf(stream, "bmLayoutPerStream1: %04x\n", ctrl->bmLayoutPerStream1);
+  fprintf(stream, "bmLayoutPerStream2: %04x\n", ctrl->bmLayoutPerStream2);
+  fprintf(stream, "bmLayoutPerStream3: %04x\n", ctrl->bmLayoutPerStream3);
+  fprintf(stream, "bmLayoutPerStream4: %04x\n", ctrl->bmLayoutPerStream4);
+
   fprintf(stream, "bInterfaceNumber: %d\n", ctrl->bInterfaceNumber);
 }
 

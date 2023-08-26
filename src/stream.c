@@ -100,6 +100,9 @@ struct format_table_entry *_get_format_entry(enum uvc_frame_format format) {
 
   switch(format) {
     /* Define new formats here */
+    FMT(UVC_FRAME_FORMAT_Z16,
+      {'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+
     ABS_FMT(UVC_FRAME_FORMAT_ANY, 2,
       {UVC_FRAME_FORMAT_UNCOMPRESSED, UVC_FRAME_FORMAT_COMPRESSED})
 
@@ -196,7 +199,7 @@ uvc_error_t uvc_query_stream_ctrl(
     uvc_stream_ctrl_t *ctrl,
     uint8_t probe,
     enum uvc_req_code req) {
-  uint8_t buf[34];
+  uint8_t buf[48];
   size_t len;
   uvc_error_t err;
 
@@ -204,6 +207,8 @@ uvc_error_t uvc_query_stream_ctrl(
 
   if (devh->info->ctrl_if.bcdUVC >= 0x0110)
     len = 34;
+    if (devh->info->ctrl_if.bcdUVC >= 0x0150)
+      len = 48;
   else
     len = 26;
 
@@ -221,13 +226,24 @@ uvc_error_t uvc_query_stream_ctrl(
     INT_TO_DW(ctrl->dwMaxVideoFrameSize, buf + 18);
     INT_TO_DW(ctrl->dwMaxPayloadTransferSize, buf + 22);
 
-    if (len == 34) {
+    if (len == 34 || len == 48) {
       INT_TO_DW ( ctrl->dwClockFrequency, buf + 26 );
       buf[30] = ctrl->bmFramingInfo;
       buf[31] = ctrl->bPreferredVersion;
       buf[32] = ctrl->bMinVersion;
       buf[33] = ctrl->bMaxVersion;
       /** @todo support UVC 1.1 */
+    }
+    if (len == 48) {
+      buf[34] = ctrl->bUsage;
+      buf[35] = ctrl->bBitDepthLuma;
+      buf[36] = ctrl->bmSettings;
+      buf[37] = ctrl->bMaxNumberOfRefFramesPlus1;
+      SHORT_TO_SW(ctrl->bmRateControlModes, buf + 38);
+      SHORT_TO_SW(ctrl->bmLayoutPerStream1, buf + 40);
+      SHORT_TO_SW(ctrl->bmLayoutPerStream2, buf + 42);
+      SHORT_TO_SW(ctrl->bmLayoutPerStream3, buf + 44);
+      SHORT_TO_SW(ctrl->bmLayoutPerStream4, buf + 46);
     }
   }
 
@@ -269,6 +285,18 @@ uvc_error_t uvc_query_stream_ctrl(
     }
     else
       ctrl->dwClockFrequency = devh->info->ctrl_if.dwClockFrequency;
+
+    if (len == 48) {
+      ctrl->bUsage = buf[34];
+      ctrl->bBitDepthLuma = buf[35];
+      ctrl->bmSettings = buf[36];
+      ctrl->bMaxNumberOfRefFramesPlus1 = buf[37];
+      ctrl->bmRateControlModes = SW_TO_SHORT(buf + 38);
+      ctrl->bmLayoutPerStream1 = SW_TO_SHORT(buf + 40);
+      ctrl->bmLayoutPerStream2 = SW_TO_SHORT(buf + 42);
+      ctrl->bmLayoutPerStream3 = SW_TO_SHORT(buf + 44);
+      ctrl->bmLayoutPerStream4 = SW_TO_SHORT(buf + 46);
+    }
 
     /* fix up block for cameras that fail to set dwMax* */
     if (ctrl->dwMaxVideoFrameSize == 0) {
@@ -482,9 +510,12 @@ uvc_error_t uvc_get_stream_ctrl_format_size(
     DL_FOREACH(stream_if->format_descs, format) {
       uvc_frame_desc_t *frame;
 
-      if (!_uvc_frame_format_matches_guid(cf, format->guidFormat))
+      if (!_uvc_frame_format_matches_guid(cf, format->guidFormat)){
+        UVC_DEBUG("Checking 0x%02x against guid (%s) failed.", cf, format->guidFormat);
         continue;
+      }
 
+      UVC_DEBUG("Checking 0x%02x against guid (%s) Found.", cf, format->guidFormat);
       DL_FOREACH(format->frame_descs, frame) {
         if (frame->wWidth != width || frame->wHeight != height)
           continue;
@@ -530,10 +561,11 @@ uvc_error_t uvc_get_stream_ctrl_format_size(
       }
     }
   }
-
+  UVC_DEBUG("No format size.");
   return UVC_ERROR_INVALID_MODE;
 
 found:
+  UVC_DEBUG("Found format.");
   return uvc_probe_stream_ctrl(devh, ctrl);
 }
 
@@ -595,9 +627,13 @@ uvc_error_t uvc_get_still_ctrl_format_size(
 static int _uvc_stream_params_negotiated(
   uvc_stream_ctrl_t *required,
   uvc_stream_ctrl_t *actual) {
+    UVC_DEBUG("Params Negotiated (Req/Act): ForI: %d/%d, FraI: %d/%d MPTS: %d/%d",
+    required->bFormatIndex, actual->bFormatIndex,
+    required->bFrameIndex, actual->bFrameIndex,
+    required->dwMaxPayloadTransferSize, actual->dwMaxPayloadTransferSize);
     return required->bFormatIndex == actual->bFormatIndex &&
-    required->bFrameIndex == actual->bFrameIndex &&
-    required->dwMaxPayloadTransferSize == actual->dwMaxPayloadTransferSize;
+    required->bFrameIndex == actual->bFrameIndex; // &&
+    // required->dwMaxPayloadTransferSize == actual->dwMaxPayloadTransferSize;
 }
 
 /** @internal

@@ -1136,6 +1136,9 @@ uvc_error_t uvc_parse_vc_header(uvc_device_t *dev,
   case 0x010a:
     info->ctrl_if.dwClockFrequency = DW_TO_INT(block + 7);
     break;
+  case 0x0150:
+    info->ctrl_if.dwClockFrequency = DW_TO_INT(block + 7);
+    break;
   case 0x0110:
     break;
   default:

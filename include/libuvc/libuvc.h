@@ -87,6 +87,8 @@ enum uvc_frame_format {
   UVC_FRAME_FORMAT_NV12,
   /** YUV: P010 */
   UVC_FRAME_FORMAT_P010,
+  /** Z16: Intel Realsense Depth */
+  UVC_FRAME_FORMAT_Z16,
   /** Number of formats understood */
   UVC_FRAME_FORMAT_COUNT,
 };
@@ -513,6 +515,15 @@ typedef struct uvc_stream_ctrl {
   uint8_t bMinVersion;
   uint8_t bMaxVersion;
   uint8_t bInterfaceNumber;
+  uint8_t bUsage;
+  uint8_t bBitDepthLuma;
+  uint8_t bmSettings;
+  uint8_t bMaxNumberOfRefFramesPlus1;
+  uint16_t bmRateControlModes;
+  uint16_t bmLayoutPerStream1;
+  uint16_t bmLayoutPerStream2;
+  uint16_t bmLayoutPerStream3;
+  uint16_t bmLayoutPerStream4;
 } uvc_stream_ctrl_t;
 
 typedef struct uvc_still_ctrl {
