@@ -1,12 +1,42 @@
 #include "libuvc/libuvc.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
+
+/** Print the hex of meta data from the Realsense camera*/
+void print_metadata(uvc_frame_t * frame){
+  printf("MetaData: %d \n", frame->metadata_bytes);
+  char * pstr = frame->metadata;
+  for (int i = 0; i < frame->metadata_bytes; i++){
+    printf("0x%02x ", pstr[i]);
+  }
+  printf("\n");
+  return;
+}
+
+/** Print the values of each pixel from depth*/
+void print_raw_frame_data(uvc_frame_t * frame){
+  uint16_t * pDataPoint = frame->data;
+  printf("Frame Values: \n");
+  for (int i = 0; i < frame->width * frame->height; i++){
+    if (i % frame->width == 0) printf("\n");
+    printf("%d ", pDataPoint[i]);
+  }
+  printf("\n");
+  return;
+}
+
+/** Converts an unaligned two-byte little-endian integer into an int16 */
+uint16_t sw_to_short(uint8_t * p){
+  return (p)[0] | ((p)[1] << 8);
+}
 
 /* This callback function runs once per frame. Use it to perform any
  * quick processing you need, or have it put the frame into your application's
  * input queue. If this function takes too long, you'll start losing frames. */
 void cb(uvc_frame_t *frame, void *ptr) {
-  uvc_frame_t *bgr;
+  uvc_frame_t *depth;
   uvc_error_t ret;
   enum uvc_frame_format *frame_format = (enum uvc_frame_format *)ptr;
   /* FILE *fp;
@@ -16,9 +46,9 @@ void cb(uvc_frame_t *frame, void *ptr) {
    * char filename[16]; */
 
   /* We'll convert the image from YUV/JPEG to BGR, so allocate space */
-  bgr = uvc_allocate_frame(frame->width * frame->height * 3);
-  if (!bgr) {
-    printf("unable to allocate bgr frame!\n");
+  depth = uvc_allocate_frame(frame->width * frame->height * 2);
+  if (!depth) {
+    printf("unable to allocate depth frame!\n");
     return;
   }
 
@@ -40,10 +70,10 @@ void cb(uvc_frame_t *frame, void *ptr) {
     break;
   case UVC_COLOR_FORMAT_YUYV:
     /* Do the BGR conversion */
-    ret = uvc_any2bgr(frame, bgr);
+    ret = uvc_any2bgr(frame, depth);
     if (ret) {
       uvc_perror(ret, "uvc_any2bgr");
-      uvc_free_frame(bgr);
+      uvc_free_frame(depth);
       return;
     }
     break;
@@ -83,8 +113,11 @@ void cb(uvc_frame_t *frame, void *ptr) {
    *
    * cvReleaseImageHeader(&cvImg);
    */
-
-  uvc_free_frame(bgr);
+  
+  print_metadata(frame);
+  print_raw_frame_data(frame);
+  
+  uvc_free_frame(depth);
 }
 
 int main(int argc, char **argv) {
